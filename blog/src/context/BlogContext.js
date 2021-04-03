@@ -1,15 +1,12 @@
 import createDataContext from "./createDataContext";
+import jsonServer from "../api/jsonServer";
 
 const blogReducer = (state, action) => {
     switch (action.type) {
-        case 'ADD_BLOG_POST':
-            return [...state, {
-                id: Math.floor(Math.random() * 99999),
-                title: action.payload.title,
-                content: action.payload.content
-            }];
+        case 'GET_BLOG_POSTS':
+            return action.payload;
         case 'UPDATE_BLOG_POST':
-            return state.map(blogPost => blogPost.id === action.payload.id ? action.payload : blogPost)
+            return state.map(blogPost => blogPost.id === action.payload.id ? action.payload : blogPost);
         case 'DELETE_BLOG_POST':
             return state.filter(blogPost => blogPost.id !== action.payload);
         default:
@@ -17,22 +14,38 @@ const blogReducer = (state, action) => {
     }
 };
 
+const getBlogPosts = (dispatch) => {
+    return async () => {
+        const response = await jsonServer.get('/blogposts')
+
+        dispatch({type: 'GET_BLOG_POSTS', payload: response.data})
+    }
+}
+
 const addBlogPost = (dispatch) => {
-    return (title, content, callback) => {
-        dispatch({type: 'ADD_BLOG_POST', payload: {title, content}});
+    return async (title, content, callback) => {
+        await jsonServer.post('/blogposts', {
+            title,
+            content
+        })
         if (callback) callback();
     };
 };
 
 const updateBlogPost = (dispatch) => {
-    return (id, title, content, callback) => {
+    return async (id, title, content, callback) => {
+        await jsonServer.put(`/blogposts/${id}`, {
+            title,
+            content
+        });
         dispatch({type: 'UPDATE_BLOG_POST', payload: {id, title, content}});
         if (callback) callback();
     }
 }
 
 const deleteBlogPost = (dispatch) => {
-    return (id) => {
+    return async (id) => {
+        await jsonServer.delete(`/blogposts/${id}`)
         dispatch({type: 'DELETE_BLOG_POST', payload: id});
     };
 };
@@ -40,6 +53,7 @@ const deleteBlogPost = (dispatch) => {
 export const {Context, Provider} = createDataContext(
     blogReducer,
     {
+        getBlogPosts,
         addBlogPost,
         updateBlogPost,
         deleteBlogPost
